@@ -25,17 +25,12 @@ end
 
 function Bird:update(dt)
 
-
+    self.dy = self.dy + GRAVITY * dt
     if love.keyboard.wasPressed('space') then
-        self.dy = -5
+        self.dy = -4
+        sounds['jump']:play()
     end
-
-
-    if self.y < VIRTUAL_HEIGHT - self.height - 14 then 
-        self.dy = self.dy + GRAVITY * dt
-        self.y = self.y + self.dy
-    else     
-    end
+    self.y = self.y + self.dy
 
 end
 

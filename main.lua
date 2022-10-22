@@ -14,8 +14,14 @@ push = require 'push'
 class = require 'class'
 require 'Bird'
 require 'Pipe'
-
 require 'PipePair'
+
+require 'StateMachine'
+require 'states/BaseState'
+require 'states/CountdownState'
+require 'states/PlayState'
+require 'states/ScoreState'
+require 'states/TitleScreenState'
 
 -- physical screen dimensions
 WINDOW_WIDTH = 1280
@@ -49,19 +55,47 @@ local scrolling = true
 function love.load()
     love.graphics.setDefaultFilter('nearest', 'nearest')
     love.window.setTitle('Fifty Bird')
-    math.randomseed(os.time())
+  
+    smallFont = love.graphics.newFont('/fonts/font.ttf', 8)
+    mediumFont = love.graphics.newFont('/fonts/flappy.ttf', 14)
+    flappyFont = love.graphics.newFont('/fonts/flappy.ttf', 28)
+    hugeFont = love.graphics.newFont('/fonts/flappy.ttf', 56)
+    love.graphics.setFont(flappyFont)
+
+    sounds = {
+        ['jump'] = love.audio.newSource('sounds/jump.wav', 'static'),
+        ['explosion'] = love.audio.newSource('sounds/explosion.wav', 'static'),
+        ['hurt'] = love.audio.newSource('sounds/hurt.wav', 'static'),
+        ['score'] = love.audio.newSource('sounds/score.wav', 'static'),
+
+        -- https://freesound.org/people/xsgianni/sounds/388079/
+        ['music'] = love.audio.newSource('sounds/marios_way.mp3', 'static')
+    }
+
+    sounds['music']:setLooping(true)
+    sounds['music']:play()
+
+
     push:setupScreen(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT, {
         vsync = true,
         fullscreen = false,
         resizable = true         
     })
 
+    gStateMachine = StateMachine {
+        ['title'] = function() return TitleScreenState() end,
+        ['countdown'] = function() return CountdownState() end,
+        ['play'] = function() return PlayState() end,
+        ['score'] = function() return ScoreState() end,
+    }
+    gStateMachine:change("title")
+
     love.keyboard.keysPressed = {}
 end
 
 function love.resize(w, h)
     push:resize(w, h)
-end
+end  
 
 function love.keypressed(key)
     love.keyboard.keysPressed[key] = true --[[ popular com key ]]
@@ -79,60 +113,24 @@ function love.keyboard.wasPressed(key) --[[  on the last frame, the key was pres
 end
 
 function love.update(dt) 
-    if scrolling then
+--[[     if scrolling then ]]
         backgroundScroll = (backgroundScroll + BACKGROUND_SCROLL_SPEED * dt) 
             % BACKGROUND_LOOPING_POINT
 
         groundScroll = (groundScroll + GROUND_SCROLL_SPEED * dt)
             % VIRTUAL_WIDTH
 
-        spawnTimer = spawnTimer + dt
+        gStateMachine:update(dt)
 
-        if spawnTimer > 2 then
-            local y = math.max(-PIPE_HEIGHT + 10,
-                math.min(lastY + math.random(-20,20), VIRTUAL_HEIGHT -90 - PIPE_HEIGHT))
-                lastY = y
+        love.keyboard.keysPressed = {}
 
-            table.insert(pipePairs, PipePair(y))
-            spawnTimer = 0
-        end
-
-        bird:update(dt)
-        -- for every pipe in the scene...
-        for k, pair in pairs(pipePairs) do
-            pair:update(dt)
-
-            for l, pipe in pairs(pair.pipes) do
-                if bird:collides(pipe) then
-                    scrolling = false
-                end
-            end
-
-            if pair.x < -PIPE_WIDTH then
-                pair.remove = true
-            end
-
-        end
-
-        for k, pipe in pairs(pipes) do
-    
-            if pair.remove then
-                table.remove(pipePairs, k)
-            end
-        end
-    end   
-    love.keyboard.keysPressed = {}
 end
 
 function love.draw()
     push:start()
     -- draw the background starting at top left (0, 0)
-    love.graphics.draw(background, -backgroundScroll, 0)
-    for k, pipe in pairs(pipePairs) do
-        pipe:render()
-    end
-    love.graphics.draw(ground, -groundScroll , VIRTUAL_HEIGHT - 16)  
-    bird:render()
-
+        love.graphics.draw(background, -backgroundScroll, 0)
+        gStateMachine:render()
+        love.graphics.draw(ground, -groundScroll , VIRTUAL_HEIGHT - 16)  
     push:finish()
 end

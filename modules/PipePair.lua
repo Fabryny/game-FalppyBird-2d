@@ -2,7 +2,7 @@
 PipePair = class{}
 
 
-local GAP_HEIGHT = 90
+local GAP_HEIGHT = 95
 
 function PipePair:init(y)
     self.scored = false
@@ -16,8 +16,8 @@ function PipePair:init(y)
         ['upper'] = Pipe('top', self.y),
         ['lower'] = Pipe('bottom', self.y + PIPE_HEIGHT + GAP_HEIGHT)
     }
-
     self.remove = false
+    self.scored = false
 end
 
 function PipePair:update(dt)

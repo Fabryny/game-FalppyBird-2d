@@ -1,6 +1,6 @@
 Pipe = class{}
 
-local PIPE_IMAGE =  love.graphics.newImage('images/pipe.png')
+ PIPE_IMAGE =  love.graphics.newImage('images/pipe.png')
 
 PIPE_SPEED = 60
 
